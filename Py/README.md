@@ -7,7 +7,7 @@ Run
 -----
 
 ```
-% cd HDC-Language-Recognition/py
+% cd HDC-Language-Recognition/Py
 % python hdc.py -h
 usage: hdc.py [-h] [-n NGRAM] [-d DIM]
 
@@ -36,3 +36,5 @@ There are 21 test languages (1k sentences per language) and 22 training language
 | 2     | 100   | 87.0%       | 450         | 
 | 2     | 1000  | 93.7%       | 755         | 
 | 2     | 10000 | 94.2%       | 6631        | 
+| 3     | 10000 | 97.3%       | 4189        | 
+| 4     | 10000 | 98.0%       | 4388        | 

@@ -29,10 +29,6 @@ LANG_MAP = {
 }
 
 def cosAngle(u, v):
-    #    d=np.dot(u[0],v[0])
-    #    n1=np.linalg.norm(u[0])
-    #    n2=np.linalg.norm(v[0])
-    #    return d/(n1*n2)
     return np.dot(u[0], v[0]) / (np.linalg.norm(u[0]) * np.linalg.norm(v[0]))
 
 def init_hv(N):
@@ -72,7 +68,6 @@ def test(symbols, languages, N, D):
 
     path = "../testing_texts/"
     for i, label in enumerate(LANG_MAP):
-        alabel = LANG_MAP[label]
         for fname in glob.glob(os.path.join(path, f"{label}_*.txt")):
             with open(fname, "r") as f:
                 text = f.read()
@@ -81,11 +76,11 @@ def test(symbols, languages, N, D):
             maxAngle, plabel = max(
                 ((cosAngle(languages[label], v), label) for label in LANG_MAP.values())
             )
-            if plabel == alabel:
+            if plabel == LANG_MAP[label]:
                 correct += 1
-            # print(f"{alabel} --> {plabel}")
             total += 1
-    print(f"Accuracy: {correct}/{total}={correct/total}")
+        if total>0:
+            print(f"+{i+1} {label}: Accuracy: {correct}/{total}={correct/total}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
