@@ -28,8 +28,10 @@ LANG_MAP = {
     "sv": "swe",
 }
 
+
 def cosAngle(u, v):
-    return np.dot(u[0], v[0]) / (np.linalg.norm(u[0]) * np.linalg.norm(v[0]))
+    return np.dot(u, v) / (np.linalg.norm(u) * np.linalg.norm(v))
+
 
 def init_hv(N):
     assert N % 2 == 0, "N is odd"
@@ -38,29 +40,35 @@ def init_hv(N):
     np.random.shuffle(a)
     return a
 
-def computeSumHV(text, letters, N, D):
-    block = np.zeros((N, D))
-    sumHV = np.zeros((1, D))
-    for i, key in enumerate(text):
-        block = np.roll(block, shift=(1, 1), axis=(0, 1))
-        v = letters.setdefault(key, init_hv(D))
-        block[0] = v
-        if i >= N:
-            nGram = block[0]
-            for v in block[1:]:
-                nGram = np.multiply(nGram, v)  # Hadamar
-            sumHV += nGram
+
+def computeSumHV(fname, letters, N, D):
+    sumHV = np.zeros(D)
+    for line in open(fname):
+        block = np.ones((N, D))
+        ngram = np.ones(D)
+        for c in line[:N]:
+            block = np.roll(block, shift=(1, 1), axis=(0, 1))
+            block[0] = letters.setdefault(c, init_hv(D))
+            ngram = np.multiply(np.roll(ngram, shift=1), block[0])  # Hadamard
+
+        for c in line[N:]:
+            ngram = np.multiply(ngram, block[N - 1])  # forget - Hadamard
+            block = np.roll(block, shift=(1, 1), axis=(0, 1))
+            block[0] = letters.setdefault(c, init_hv(D))
+            ngram = np.multiply(np.roll(ngram, shift=1), block[0])  # Hadamard
+            sumHV += ngram
     return sumHV
+
 
 def train(N, D):
     symbols = {}
     languages = {}
     for i, lang in enumerate(LANG_MAP.values()):
         fname = "../training_texts/" + lang + ".txt"
-        text = open(fname).read()
-        print(f"{i+1}/{len(LANG_MAP)}: Loaded training file {fname}")
-        languages[lang] = computeSumHV(text, symbols, N, D)
+        print(f"{i+1}/{len(LANG_MAP)}: Processing {fname}")
+        languages[lang] = computeSumHV(fname, symbols, N, D)
     return symbols, languages
+
 
 def test(symbols, languages, N, D):
     total = 0
@@ -69,18 +77,16 @@ def test(symbols, languages, N, D):
     path = "../testing_texts/"
     for i, label in enumerate(LANG_MAP):
         for fname in glob.glob(os.path.join(path, f"{label}_*.txt")):
-            with open(fname, "r") as f:
-                text = f.read()
-            v = computeSumHV(text, symbols, N, D)
-
+            v = computeSumHV(fname, symbols, N, D)
             maxAngle, plabel = max(
                 ((cosAngle(languages[label], v), label) for label in LANG_MAP.values())
             )
             if plabel == LANG_MAP[label]:
                 correct += 1
             total += 1
-        if total>0:
+        if total > 0:
             print(f"+{i+1} {label}: Accuracy: {correct}/{total}={correct/total}")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
