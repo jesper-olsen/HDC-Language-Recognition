@@ -51,7 +51,7 @@ There are 21 test languages (1k sentences per language) and 22 training language
 Confusion Matrix for the 4-gram, 10000-dim case
 
 ||afr|bul|ces|dan|deu|ell|eng|est|fin|fra|hun|ita|lav|lit|nld|pol|por|ron|slk|slv|spa|swe|
-|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|
+|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|-:|
 |afr|0|0|0|0|9|0|1|0|0|0|0|0|0|0|19|0|0|0|0|0|0|1|
 |bul|0|987|2|0|0|5|0|0|1|2|0|0|0|0|0|4|1|0|1|6|0|0|
 |ces|0|6|944|1|0|0|1|1|0|0|0|0|1|2|0|1|0|0|51|8|0|0|
