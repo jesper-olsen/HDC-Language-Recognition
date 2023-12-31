@@ -2,29 +2,30 @@ import numpy as np
 import os
 import argparse
 import glob
+import collections
 
 LANG_MAP = {
     "af": "afr",
     "bg": "bul",
     "cs": "ces",
     "da": "dan",
-    "nl": "nld",
     "de": "deu",
+    "el": "ell",
     "en": "eng",
+    "es": "spa",
     "et": "est",
     "fi": "fin",
     "fr": "fra",
-    "el": "ell",
     "hu": "hun",
     "it": "ita",
-    "lv": "lav",
     "lt": "lit",
+    "lv": "lav",
+    "nl": "nld",
     "pl": "pol",
     "pt": "por",
     "ro": "ron",
     "sk": "slk",
     "sl": "slv",
-    "es": "spa",
     "sv": "swe",
 }
 
@@ -75,6 +76,7 @@ def test(symbols, languages, N, D):
     correct = 0
 
     path = "../testing_texts/"
+    d = collections.defaultdict(int)
     for i, label in enumerate(LANG_MAP):
         for fname in glob.glob(os.path.join(path, f"{label}_*.txt")):
             v = computeSumHV(fname, symbols, N, D)
@@ -84,8 +86,23 @@ def test(symbols, languages, N, D):
             if plabel == LANG_MAP[label]:
                 correct += 1
             total += 1
+            d[(plabel, LANG_MAP[label])] += 1
         if total > 0:
             print(f"+{i+1} {label}: Accuracy: {correct}/{total}={correct/total}")
+        display_confusions(d)
+
+
+def display_confusions(d, format="plain"):
+    v = sorted(LANG_MAP.values())
+    if format == "plain":
+        print([s for s in v])
+        for s in v:
+            print([d[(s, x)] for x in v])
+    else:  # markdown
+        print("|" + "|".join(v) + "|")
+        print("|" + "|".join("-:" for x in v) + "|")
+        for s in v:
+            print("|" + "|".join(str(d[(s, x)]) for x in v) + "|")
 
 
 if __name__ == "__main__":
