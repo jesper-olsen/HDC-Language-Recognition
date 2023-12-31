@@ -89,7 +89,7 @@ def test(symbols, languages, N, D):
             d[(plabel, LANG_MAP[label])] += 1
         if total > 0:
             print(f"+{i+1} {label}: Accuracy: {correct}/{total}={correct/total}")
-        display_confusions(d)
+    display_confusions(d)
 
 
 def display_confusions(d, format="plain"):
@@ -99,10 +99,10 @@ def display_confusions(d, format="plain"):
         for s in v:
             print([d[(s, x)] for x in v])
     else:  # markdown
-        print("|" + "|".join(v) + "|")
-        print("|" + "|".join("-:" for x in v) + "|")
-        for s in v:
-            print("|" + "|".join(str(d[(s, x)]) for x in v) + "|")
+        print("||" + "|".join(v) + "|")
+        print("|-:|" + "|".join("-:" for x in v) + "|")
+        for i,s in enumerate(v):
+            print(f"|{v[i]}|" + "|".join(str(d[(s, x)]) for x in v) + "|")
 
 
 if __name__ == "__main__":

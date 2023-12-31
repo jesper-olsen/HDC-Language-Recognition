@@ -29,7 +29,7 @@ There are 21 test languages (1k sentences per language) and 22 training language
 % time python hdc.py -n 2 -d 100
 ```
 
-## Accuracy 
+### Accuracy 
 
 | ngram | dim    | Accuracy    | Time        |  
 | ----: | --:    | ---------:  | ----------: | 
@@ -46,7 +46,7 @@ There are 21 test languages (1k sentences per language) and 22 training language
 | 5     | 100000 | 98.5%       | 39644       | 
 
 #
-## Confusion Matrix
+### Confusion Matrix
  
 Confusion Matrix for the 4-gram, 10000-dim case
 
