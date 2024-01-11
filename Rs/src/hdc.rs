@@ -1,38 +1,117 @@
-use rand::Rng;
+//use rand::Rng;
+use rand::{random, Rng};
+use std::cmp::Ordering;
 
 const N_BITS: usize = 100000;
-pub const VEC_SIZE: usize = vec_size(N_BITS);
+const VEC_SIZE: usize = vec_size(N_BITS);
 
-pub fn multiply<const N: usize>(a1: &[usize; N], a2: &[usize; N]) -> [usize; N] {
-    let mut result: [usize; N] = [0; N];
+fn pct(n: u8) -> bool {
+    random::<u8>() % 100 < n
+}
 
-    for i in 0..N {
-        result[i] = a1[i] ^ a2[i];
+#[derive(Debug, Clone, Copy)]
+pub struct Hdv {
+    v: [usize; VEC_SIZE],
+}
+
+pub fn info() {
+    let size_of_usize = std::mem::size_of::<usize>();
+    println!("usize occupies {} bytes", size_of_usize);
+    println!("vec_size for 10k bits: {VEC_SIZE} ");
+    println!("actual bits: {} ", VEC_SIZE * size_of_usize * 8);
+}
+
+impl Hdv {
+    pub fn new() -> Self {
+        assert!(VEC_SIZE % 2 == 0, "VEC_SIZE must be even");
+        let mut rng = rand::thread_rng();
+        let mut array: [usize; VEC_SIZE] = [0; VEC_SIZE];
+        for i in 0..VEC_SIZE / 2 {
+            array[i] = rng.gen_range(0..=usize::MAX);
+            array[i + VEC_SIZE / 2] = array[i];
+        }
+        //TODO - shuffle
+
+        Hdv { v: array }
+    }
+
+    pub fn zeros() -> Self {
+        Hdv {
+            v: [0; VEC_SIZE],
+        }
+    }
+}
+
+pub fn multiply(a: &Hdv, b: &Hdv) -> Hdv {
+    let mut result = Hdv::zeros();
+
+    for i in 0..VEC_SIZE {
+        result.v[i] = a.v[i] ^ b.v[i];
     }
 
     result
 }
 
-pub fn hamming_distance(a: &[usize], b: &[usize]) -> usize {
-    assert_eq!(a.len(), b.len(), "Arrays must have the same length");
+pub fn pmultiply(a: &Hdv, pa: usize, b: &Hdv, pb: usize) -> Hdv {
+    //permute and multiply
+    let mut result = Hdv::zeros();
 
-    a.iter()
-        .zip(b.iter())
+    for i in 0..VEC_SIZE {
+        result.v[i] = a.v[(i + pa) % VEC_SIZE] ^ b.v[(i + pb) % VEC_SIZE];
+    }
+
+    result
+}
+
+pub fn hamming_distance(a: &Hdv, b: &Hdv) -> usize {
+    assert_eq!(a.v.len(), b.v.len(), "Arrays must have the same length");
+
+    a.v.iter()
+        .zip(b.v.iter())
         .map(|(&x, &y)| (x ^ y).count_ones() as usize)
         .sum()
 }
 
-pub fn add<const N: usize>(arrays: &[&[usize; N]]) -> [usize; N] {
+pub fn add(arrays: &[&Hdv]) -> Hdv {
     assert!(!arrays.is_empty(), "Arrays slice must not be empty");
 
-    let mut result = [0; N];
+    let mut result = Hdv::zeros();
 
     for i in 0..usize::BITS {
-        for j in 0..N {
-            let ones: usize = arrays.iter().fold(0, |acc, a| acc + ((a[j] >> i) & 1));
+        for j in 0..VEC_SIZE {
+            let ones: usize = arrays
+                .iter()
+                .fold(0, |acc, a| acc + ((a.v[j] >> i) & 1));
+
+            //match ones.cmp(&(arrays.len() / 2)) {
+            //    Ordering::Less => result.v[j] |= 1 << i,
+            //    Ordering::Equal if pct(50) => result.v[j] |= 1 << i,
+            //    Ordering::Equal => (),
+            //    Ordering::Greater => (),
+            //}
 
             if ones > arrays.len() / 2 {
-                result[j] |= 1 << i;
+                result.v[j] |= 1 << i;
+            }
+        }
+    }
+
+    result
+}
+
+pub fn add2(arrays: &[Hdv]) -> Hdv {
+    assert!(!arrays.is_empty(), "Arrays slice must not be empty");
+
+    let mut result = Hdv::zeros();
+
+    for i in 0..usize::BITS {
+        for j in 0..VEC_SIZE {
+            let ones: usize = arrays
+                .iter()
+                .fold(0, |acc, a| acc + ((a.v[j] >> i) & 1));
+
+            if ones > arrays.len() / 2 {
+                result.v[j] |= 1 << i;
             }
         }
     }
@@ -54,39 +133,25 @@ const fn vec_size(n_bits: usize) -> usize {
     }
 }
 
-pub fn init_random_array<const N: usize>() -> [usize; N] {
-    assert!(N % 2 == 0, "N must be even");
-    let mut rng = rand::thread_rng();
-
-    let mut array: [usize; N] = [0; N];
-
-    for i in 0..N / 2 {
-        array[i] = rng.gen_range(0..=usize::MAX);
-        array[i + N / 2] = array[i];
-    }
-
-    array
-}
-
-fn example_mexican_dollar() {
+pub fn example_mexican_dollar() {
     // Pentti Kanerva: What We Mean When We Say “What’s the Dollar of Mexico?”
     // https://redwood.berkeley.edu/wp-content/uploads/2020/05/kanerva2010what.pdf
     // Calculate answer: Mexican Peso - mpe
-    let name: [usize; VEC_SIZE] = init_random_array();
-    let capital: [usize; VEC_SIZE] = init_random_array();
-    let currency: [usize; VEC_SIZE] = init_random_array();
+    let name = Hdv::new();
+    let capital = Hdv::new();
+    let currency = Hdv::new();
 
-    let swe: [usize; VEC_SIZE] = init_random_array();
-    let usa: [usize; VEC_SIZE] = init_random_array();
-    let mex: [usize; VEC_SIZE] = init_random_array();
+    let swe = Hdv::new();
+    let usa = Hdv::new();
+    let mex = Hdv::new();
 
-    let stockholm: [usize; VEC_SIZE] = init_random_array();
-    let wdc: [usize; VEC_SIZE] = init_random_array();
-    let cdmx: [usize; VEC_SIZE] = init_random_array();
+    let stockholm = Hdv::new();
+    let wdc = Hdv::new();
+    let cdmx = Hdv::new();
 
-    let usd: [usize; VEC_SIZE] = init_random_array();
-    let mpe: [usize; VEC_SIZE] = init_random_array();
-    let skr: [usize; VEC_SIZE] = init_random_array();
+    let usd = Hdv::new();
+    let mpe = Hdv::new();
+    let skr = Hdv::new();
 
     let ustates = add(&[
         &multiply(&name, &usa),
@@ -132,15 +197,6 @@ fn example_mexican_dollar() {
     }
     println!("Min is: {ml}");
     assert_eq!(ml, "mpe", "Expected mpe");
-}
-
-fn main() {
-    let size_of_usize = std::mem::size_of::<usize>();
-    println!("usize occupies {} bytes", size_of_usize);
-    println!("vec_size for 10k bits: {VEC_SIZE} ");
-    println!("actual bits: {} ", VEC_SIZE * size_of_usize * 8);
-
-    example_mexican_dollar();
 }
 
 #[cfg(test)]
