@@ -3,7 +3,9 @@ use rand::{random, Rng};
 use std::cmp::Ordering;
 
 const N_BITS: usize = 100000;
+const SIZE_OF_USIZE: usize = std::mem::size_of::<usize>();
 const VEC_SIZE: usize = vec_size(N_BITS);
+const N_HDV_BITS: usize = VEC_SIZE * SIZE_OF_USIZE * 8;
 
 fn pct(n: u8) -> bool {
     random::<u8>() % 100 < n
@@ -17,8 +19,61 @@ pub struct Hdv {
 pub fn info() {
     let size_of_usize = std::mem::size_of::<usize>();
     println!("usize occupies {} bytes", size_of_usize);
-    println!("vec_size for 10k bits: {VEC_SIZE} ");
+    println!("vec_size for {N_BITS} bits: {VEC_SIZE} ");
     println!("actual bits: {} ", VEC_SIZE * size_of_usize * 8);
+}
+
+
+pub fn accumulate(hdv: &Hdv, a: &mut [usize; N_HDV_BITS]) {
+    for (i, &x) in hdv.v.iter().enumerate() {
+        for j in 0..SIZE_OF_USIZE*8 {
+            a[i*SIZE_OF_USIZE*8+j] += (x>>j) & 1;
+        }
+    }
+}
+
+pub fn hdv2bitarray(hdv: &Hdv) -> [usize; N_HDV_BITS] {
+    let mut a = [0; N_HDV_BITS];
+
+    for (i, &x) in hdv.v.iter().enumerate() {
+        for j in 0..SIZE_OF_USIZE*8 {
+            a[i*SIZE_OF_USIZE*8+j] = (x>>j) & 1;
+        }
+    }
+    a 
+}
+
+pub fn bitarray2hdv(a: &[usize], thr: usize) -> Hdv {
+    let mut hdv = Hdv::zeros();
+
+    for (i, &b) in a.iter().enumerate() {
+        let idx = i/(SIZE_OF_USIZE*8);
+        //hdv.v[idx] |= (hdv.v[idx]<<1) | b;
+        if b>thr {
+            hdv.v[idx] |= 1 << (i % (SIZE_OF_USIZE*8));
+        }
+    }
+    hdv
+}
+
+pub fn example_bitarray() {
+    let mut hdv = Hdv::zeros();
+    hdv.v[0]=1; 
+    hdv.v[1]=2; 
+    hdv.v[2]=255; 
+
+    println!("    v: {:?}", hdv.v);
+    let a=hdv2bitarray(&hdv);
+    println!("    a: {:?}", a);
+    let h=bitarray2hdv(&a,0);
+    println!("    h: {:?}", h);
+
+    hdv.v[3]=1;
+    let mut a=hdv2bitarray(&hdv);
+    accumulate(&hdv,&mut a);
+
+    let h = bitarray2hdv(&a,0);
+    println!("acc h: {:?}", h);
 }
 
 impl Hdv {
@@ -36,9 +91,7 @@ impl Hdv {
     }
 
     pub fn zeros() -> Self {
-        Hdv {
-            v: [0; VEC_SIZE],
-        }
+        Hdv { v: [0; VEC_SIZE] }
     }
 }
 
@@ -79,9 +132,7 @@ pub fn add(arrays: &[&Hdv]) -> Hdv {
 
     for i in 0..usize::BITS {
         for j in 0..VEC_SIZE {
-            let ones: usize = arrays
-                .iter()
-                .fold(0, |acc, a| acc + ((a.v[j] >> i) & 1));
+            let ones: usize = arrays.iter().fold(0, |acc, a| acc + ((a.v[j] >> i) & 1));
 
             //match ones.cmp(&(arrays.len() / 2)) {
             //    Ordering::Less => result.v[j] |= 1 << i,
@@ -106,9 +157,7 @@ pub fn add2(arrays: &[Hdv]) -> Hdv {
 
     for i in 0..usize::BITS {
         for j in 0..VEC_SIZE {
-            let ones: usize = arrays
-                .iter()
-                .fold(0, |acc, a| acc + ((a.v[j] >> i) & 1));
+            let ones: usize = arrays.iter().fold(0, |acc, a| acc + ((a.v[j] >> i) & 1));
 
             if ones > arrays.len() / 2 {
                 result.v[j] |= 1 << i;
@@ -131,6 +180,85 @@ const fn vec_size(n_bits: usize) -> usize {
     } else {
         n + 1
     }
+}
+
+
+pub fn example_mexican_dollar2() {
+    // Pentti Kanerva: What We Mean When We Say “What’s the Dollar of Mexico?”
+    // https://redwood.berkeley.edu/wp-content/uploads/2020/05/kanerva2010what.pdf
+    // Calculate answer: Mexican Peso - mpe
+    let name = Hdv::new();
+    let capital = Hdv::new();
+    let currency = Hdv::new();
+
+    let swe = Hdv::new();
+    let usa = Hdv::new();
+    let mex = Hdv::new();
+
+    let stockholm = Hdv::new();
+    let wdc = Hdv::new();
+    let cdmx = Hdv::new();
+
+    let usd = Hdv::new();
+    let mpe = Hdv::new();
+    let skr = Hdv::new();
+
+    let mut a=hdv2bitarray(&Hdv::zeros());
+    accumulate(&multiply(&name, &usa), &mut a);
+    accumulate(&multiply(&capital, &wdc), &mut a);
+    accumulate(&multiply(&currency, &usd), &mut a);
+    let ustates = bitarray2hdv(&a,3/2);
+
+    //let ustates = add(&[
+    //    &multiply(&name, &usa),
+    //    &multiply(&capital, &wdc),
+    //    &multiply(&currency, &usd),
+    //]);
+
+    let _sweden = add(&[
+        &multiply(&name, &swe),
+        &multiply(&capital, &stockholm),
+        &multiply(&currency, &skr),
+    ]);
+
+    let mut a=hdv2bitarray(&Hdv::zeros());
+    accumulate(&multiply(&name, &mex), &mut a);
+    accumulate(&multiply(&capital, &cdmx), &mut a);
+    accumulate(&multiply(&currency, &mpe), &mut a);
+    let mexico = bitarray2hdv(&a,3/2);
+
+    //let mexico = add(&[
+    //    &multiply(&name, &mex),
+    //    &multiply(&capital, &cdmx),
+    //    &multiply(&currency, &mpe),
+    //]);
+
+    let fmu = multiply(&mexico, &ustates);
+    let x = multiply(&fmu, &usd);
+
+    let vocab = [
+        ("swe", swe),
+        ("usa", usa),
+        ("mex", mex),
+        ("stockholm", stockholm),
+        ("wdc", wdc),
+        ("cdmx", cdmx),
+        ("usd", usd),
+        ("mpe", mpe),
+        ("skr", skr),
+    ];
+    let mut ml = vocab[0].0;
+    let mut md = hamming_distance(&x, &vocab[0].1);
+    for (label, v) in vocab.iter().skip(1) {
+        let d = hamming_distance(&x, v);
+        println!("{label} {d:?}");
+        if d < md {
+            md = d;
+            ml = label;
+        }
+    }
+    println!("Min is: {ml}");
+    assert_eq!(ml, "mpe", "Expected mpe");
 }
 
 pub fn example_mexican_dollar() {
