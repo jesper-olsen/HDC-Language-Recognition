@@ -2,6 +2,7 @@ HDC-py
 ==============
 
 Python version of the Matlab/Verilog language recogniton algorithm above.
+See Rs directory for a rust version that uses binary rather than bi-polar vectors.
 
 Run
 -----
