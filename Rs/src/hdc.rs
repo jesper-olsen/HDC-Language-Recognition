@@ -1,4 +1,12 @@
-use rand::seq::SliceRandom;
+// Copyright (c) 2024 Jesper Olsen
+//
+//References:
+//
+//[1] "What We Mean When We Say 'What’s the Dollar of Mexico?': Prototypes and Mapping in Concept Space" by Pentti Kanerva, Quantum Informatics for Cognitive, Social, and Semantic Processes: Papers from the AAAI Fall Symposium (FS-10-08), 2010
+//[2] "Language Geometry using Random Indexing" Aditya Joshi1, Johan T. Halseth2, and Pentti Kanerva, 2016
+//[3] "A Robust and Energy-Efficient Classifier Using Brain-Inspired Hyperdimensional Computing" Abbas Rahimi, Pentti Kanerva, Jan M. Rabaey, 2016
+//[4] "Hyperdimensional Computing: An Algebra for Computing with Vectors", Pentti Kanerva, 2022
+
 use rand::{random, Rng};
 use std::cmp::Ordering;
 
@@ -7,11 +15,24 @@ const SIZE_OF_USIZE: usize = std::mem::size_of::<usize>();
 const VEC_SIZE: usize = vec_size(N_BITS);
 const N_HDV_BITS: usize = VEC_SIZE * SIZE_OF_USIZE * 8;
 
+const fn vec_size(n_bits: usize) -> usize {
+    let bits_per_usize = 8 * std::mem::size_of::<usize>();
+    let n = if n_bits / bits_per_usize == 0 {
+        n_bits / bits_per_usize
+    } else {
+        n_bits / bits_per_usize + 1
+    };
+    if n % 2 == 0 {
+        n
+    } else {
+        n + 1
+    }
+}
+
 fn pct(n: u8) -> bool {
     random::<u8>() % 100 < n
 }
 
-//#[derive(Debug, Clone, Copy)]
 #[derive(Debug)]
 pub struct Hdv {
     //v: [usize; VEC_SIZE],
@@ -36,9 +57,8 @@ pub fn accumulate(hdv: &Hdv, a: &mut [usize]) {
 pub fn hdv2bitarray(hdv: &Hdv) -> Vec<usize> {
     let mut a = Vec::with_capacity(N_HDV_BITS);
 
-    for (i, &x) in hdv.v.iter().enumerate() {
+    for x in hdv.v.iter() {
         for j in 0..SIZE_OF_USIZE * 8 {
-            //a[i*SIZE_OF_USIZE*8+j] = (x>>j) & 1;
             a.push((x >> j) & 1);
         }
     }
@@ -50,7 +70,6 @@ pub fn bitarray2hdv(a: &[usize], thr: usize) -> Hdv {
 
     for (i, &b) in a.iter().enumerate() {
         let idx = i / (SIZE_OF_USIZE * 8);
-        //hdv.v[idx] |= (hdv.v[idx]<<1) | b;
         if b > thr {
             hdv.v[idx] |= 1 << (i % (SIZE_OF_USIZE * 8));
         }
@@ -74,7 +93,7 @@ impl Hdv {
         let v = (0..VEC_SIZE)
             .map(|_| rng.gen_range(0..=usize::MAX))
             .collect();
-        Hdv { v: v }
+        Hdv { v  }
     }
 
     pub fn zeros() -> Self {
@@ -156,20 +175,6 @@ pub fn add2(arrays: &[Hdv]) -> Hdv {
     }
 
     result
-}
-
-const fn vec_size(n_bits: usize) -> usize {
-    let bits_per_usize = 8 * std::mem::size_of::<usize>();
-    let n = if n_bits / bits_per_usize == 0 {
-        n_bits / bits_per_usize
-    } else {
-        n_bits / bits_per_usize + 1
-    };
-    if n % 2 == 0 {
-        n
-    } else {
-        n + 1
-    }
 }
 
 pub fn example_bitarray() {

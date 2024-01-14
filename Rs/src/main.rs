@@ -1,5 +1,6 @@
-use glob;
-use std::collections::hash_map::{Entry, HashMap};
+// Copyright (c) 2024 Jesper Olsen
+
+use std::collections::hash_map::{HashMap};
 use std::fs::File;
 use std::io::{self, BufRead};
 
@@ -51,11 +52,11 @@ fn compute_sum_hv(fname: &str, n: usize, symbols: &mut HashMap<char, hdc::Hdv>) 
             let b0 = symbols.entry(c).or_insert(hdc::Hdv::new());
             block.insert(0, c);
             ngram = hdc::pmultiply(&ngram, 1, b0, 0);
-            hdc::accumulate(&ngram, &mut *acc);
+            hdc::accumulate(&ngram, &mut acc);
             nadd += 1;
         }
     }
-    hdc::bitarray2hdv(&*acc, nadd / 2)
+    hdc::bitarray2hdv(&acc, nadd / 2)
 }
 
 fn train(n: usize) -> (HashMap<char, hdc::Hdv>, Vec<(&'static str, hdc::Hdv)>) {
@@ -70,7 +71,7 @@ fn train(n: usize) -> (HashMap<char, hdc::Hdv>, Vec<(&'static str, hdc::Hdv)>) {
     (symbols, languages)
 }
 
-fn test(symbols: &mut HashMap<char, hdc::Hdv>, languages: &Vec<(&str, hdc::Hdv)>, n: usize) {
+fn test(symbols: &mut HashMap<char, hdc::Hdv>, languages: &[(&str, hdc::Hdv)], n: usize) {
     let mut total = 0;
     let mut correct = 0;
 
@@ -80,11 +81,11 @@ fn test(symbols: &mut HashMap<char, hdc::Hdv>, languages: &Vec<(&str, hdc::Hdv)>
         let pattern = format!("../testing_texts/{lxx}_*.txt");
         for fname in glob::glob(&pattern).expect("wrong glob pattern") {
             let fname = fname.unwrap();
-            let v = compute_sum_hv(&fname.to_str().unwrap(), n, symbols);
+            let v = compute_sum_hv(fname.to_str().unwrap(), n, symbols);
             let mut min_lang = 0;
             let b = &languages[0].1;
-            let mut dmin = hdc::hamming_distance(&v, &b);
-            for (j, (lang, b)) in languages.iter().enumerate().skip(1) {
+            let mut dmin = hdc::hamming_distance(&v, b);
+            for (j, (_lang, b)) in languages.iter().enumerate().skip(1) {
                 let d = hdc::hamming_distance(&v, b);
                 if d < dmin {
                     dmin = d;
